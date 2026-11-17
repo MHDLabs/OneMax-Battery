@@ -32,3 +32,11 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release
+
+      - name: Upload Linux x86_64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-max-battery-linux-x86_64
+          path: target/release/one-max-battery
+          if-no-files-found: error
+          retention-days: 14
