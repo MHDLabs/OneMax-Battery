@@ -2,16 +2,7 @@ pub const REPORT_ID: u8 = 0xB5;
 pub const BATTERY_COMMAND: u8 = 0x01;
 pub const REPORT_LEN: usize = 8;
 
-pub const BATTERY_REQUEST: [u8; REPORT_LEN] = [
-    REPORT_ID,
-    BATTERY_COMMAND,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-];
+pub const BATTERY_REQUEST: [u8; REPORT_LEN] = [REPORT_ID, BATTERY_COMMAND, 0, 0, 0, 0, 0, 0];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BatteryResponse {
@@ -28,9 +19,7 @@ pub enum ParseResult {
 }
 
 pub fn parse_response(data: &[u8]) -> ParseResult {
-    if data.first() != Some(&REPORT_ID)
-        || data.get(1) != Some(&BATTERY_COMMAND)
-    {
+    if data.first() != Some(&REPORT_ID) || data.get(1) != Some(&BATTERY_COMMAND) {
         return ParseResult::Unrelated;
     }
 
