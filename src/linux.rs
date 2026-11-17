@@ -14,9 +14,7 @@ const USB_PID: u32 = 0x0066;
 const RESPONSE_TIMEOUT: Duration = Duration::from_millis(750);
 const HIDRAW_SYSFS: &str = "/sys/class/hidraw";
 
-const BATTERY_REPORT_SIGNATURE: [u8; 9] = [
-    0x06, 0xB5, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0xB5,
-];
+const BATTERY_REPORT_SIGNATURE: [u8; 9] = [0x06, 0xB5, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0xB5];
 
 fn is_target_hid_id(hid_id: &str) -> bool {
     let mut fields = hid_id.split(':');

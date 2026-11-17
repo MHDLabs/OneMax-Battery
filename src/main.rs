@@ -6,8 +6,7 @@ use std::{
     error::Error,
     io::{self, Write},
     path::{Path, PathBuf},
-    process,
-    thread,
+    process, thread,
     time::Duration,
 };
 
@@ -104,9 +103,9 @@ fn parse_options() -> Result<Option<Options>, Box<dyn Error>> {
                 let value = args
                     .get(index)
                     .ok_or_else(|| invalid_input("--interval requires a number of seconds"))?;
-                interval = value.parse::<u64>().map_err(|_| {
-                    invalid_input(format!("invalid interval: {value}"))
-                })?;
+                interval = value
+                    .parse::<u64>()
+                    .map_err(|_| invalid_input(format!("invalid interval: {value}")))?;
                 if !(MIN_INTERVAL..=MAX_INTERVAL).contains(&interval) {
                     return Err(invalid_input(format!(
                         "--interval must be between {MIN_INTERVAL} and {MAX_INTERVAL} seconds"
@@ -119,10 +118,7 @@ fn parse_options() -> Result<Option<Options>, Box<dyn Error>> {
             }
             value => {
                 if device.replace(PathBuf::from(value)).is_some() {
-                    return Err(invalid_input(
-                        "only one device path may be specified",
-                    )
-                    .into());
+                    return Err(invalid_input("only one device path may be specified").into());
                 }
             }
         }
