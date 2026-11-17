@@ -66,7 +66,7 @@ fn wait_readable(file: &File, timeout: Duration) -> io::Result<bool> {
             return Ok(false);
         }
 
-        let timeout_ms = ((remaining.as_nanos() + 999_999) / 1_000_000)
+        let timeout_ms = remaining.as_nanos().div_ceil(1_000_000)
             .max(1)
             .min(i32::MAX as u128) as i32;
 
