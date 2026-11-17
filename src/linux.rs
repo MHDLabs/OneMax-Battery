@@ -60,9 +60,7 @@ fn verify_target_hidraw(device: &str) -> io::Result<()> {
     if !is_target_hid_id(hid_id) {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            format!(
-                "unsupported receiver (HID_ID={hid_id}); expected USB 1EA7:0066"
-            ),
+            format!("unsupported receiver (HID_ID={hid_id}); expected USB 1EA7:0066"),
         ));
     }
 
@@ -151,7 +149,6 @@ pub fn read_battery(device: &str) -> io::Result<BatteryResponse> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
