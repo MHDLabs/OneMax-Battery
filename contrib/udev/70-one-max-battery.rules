@@ -1,0 +1,3 @@
+# Grant the active desktop user access to the tested ONE MAX receiver.
+# systemd-logind applies the per-seat ACL through the uaccess tag.
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="1ea7", ATTRS{idProduct}=="0066", TAG+="uaccess"

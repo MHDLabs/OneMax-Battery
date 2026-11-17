@@ -1,0 +1,8 @@
+// Add "custom/onemax-battery" to your "modules-right" array.
+"custom/onemax-battery": {
+    "exec": "$HOME/.local/bin/one-max-battery --watch --waybar --interval 60",
+    "return-type": "json",
+    "format": " {text}",
+    "tooltip": true,
+    "restart-interval": 5
+}

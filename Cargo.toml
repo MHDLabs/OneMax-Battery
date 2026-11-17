@@ -1,9 +1,9 @@
 [package]
 name = "one-max-battery"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.74"
-description = "Read battery status from supported 2.4 GHz wireless mouse receivers on Linux"
+description = "A lightweight Linux HID battery monitor for OneMax wireless mice"
 license = "MIT"
 repository = "https://github.com/MHDLabs/OneMax-Battery"
 

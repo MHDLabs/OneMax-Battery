@@ -42,6 +42,14 @@ pub fn parse_response(data: &[u8]) -> ParseResult {
     })
 }
 
+pub fn battery_class(percent: u8) -> &'static str {
+    match percent {
+        0..=15 => "critical",
+        16..=30 => "warning",
+        _ => "normal",
+    }
+}
+
 pub fn format_hex(data: &[u8]) -> String {
     data.iter()
         .map(|byte| format!("{byte:02X}"))
@@ -92,5 +100,15 @@ mod tests {
             parse_response(&response),
             ParseResult::Invalid("battery percentage is outside 0..=100")
         );
+    }
+
+    #[test]
+    fn maps_battery_percentage_to_waybar_states() {
+        assert_eq!(battery_class(100), "normal");
+        assert_eq!(battery_class(31), "normal");
+        assert_eq!(battery_class(30), "warning");
+        assert_eq!(battery_class(16), "warning");
+        assert_eq!(battery_class(15), "critical");
+        assert_eq!(battery_class(0), "critical");
     }
 }
