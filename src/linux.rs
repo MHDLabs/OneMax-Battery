@@ -8,9 +8,23 @@ use std::{
 
 use crate::protocol::{parse_response, BatteryResponse, ParseResult, BATTERY_REQUEST};
 
-const USB_VID: &str = "1EA7";
-const USB_PID: &str = "0066";
+const USB_BUS_TYPE: u32 = 0x0003;
+const USB_VID: u32 = 0x1EA7;
+const USB_PID: u32 = 0x0066;
 const RESPONSE_TIMEOUT: Duration = Duration::from_millis(750);
+
+fn is_target_hid_id(hid_id: &str) -> bool {
+    let mut fields = hid_id.split(':');
+    let (Some(bus_type), Some(vendor), Some(product), None) =
+        (fields.next(), fields.next(), fields.next(), fields.next())
+    else {
+        return false;
+    };
+
+    u32::from_str_radix(bus_type, 16).ok() == Some(USB_BUS_TYPE)
+        && u32::from_str_radix(vendor, 16).ok() == Some(USB_VID)
+        && u32::from_str_radix(product, 16).ok() == Some(USB_PID)
+}
 
 fn verify_target_hidraw(device: &str) -> io::Result<()> {
     let path = Path::new(device);
@@ -43,14 +57,12 @@ fn verify_target_hidraw(device: &str) -> io::Result<()> {
             )
         })?;
 
-    let fields: Vec<_> = hid_id.split(':').collect();
-    if fields.len() != 3
-        || !fields[1].eq_ignore_ascii_case(USB_VID)
-        || !fields[2].eq_ignore_ascii_case(USB_PID)
-    {
+    if !is_target_hid_id(hid_id) {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            format!("unsupported receiver (HID_ID={hid_id}); expected USB {USB_VID}:{USB_PID}"),
+            format!(
+                "unsupported receiver (HID_ID={hid_id}); expected USB 1EA7:0066"
+            ),
         ));
     }
 
@@ -137,5 +149,30 @@ pub fn read_battery(device: &str) -> io::Result<BatteryResponse> {
             }
             ParseResult::Battery(response) => return Ok(response),
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::is_target_hid_id;
+
+    #[test]
+    fn accepts_kernel_zero_padded_usb_hid_id() {
+        assert!(is_target_hid_id("0003:00001EA7:00000066"));
+    }
+
+    #[test]
+    fn accepts_unpadded_hex_fields() {
+        assert!(is_target_hid_id("3:1EA7:66"));
+    }
+
+    #[test]
+    fn rejects_other_devices_and_malformed_ids() {
+        assert!(!is_target_hid_id("0003:00001234:00000066"));
+        assert!(!is_target_hid_id("0003:00001EA7:00000067"));
+        assert!(!is_target_hid_id("0001:00001EA7:00000066"));
+        assert!(!is_target_hid_id("0003:00001EA7"));
+        assert!(!is_target_hid_id("not-a-hid-id"));
     }
 }
