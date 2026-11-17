@@ -20,7 +20,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        run: cargo build --release --locked
+        run: cargo build --release
 
       - name: Prepare release files
         run: |
