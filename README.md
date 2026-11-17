@@ -68,4 +68,4 @@ This is an experimental userspace driver, not a kernel driver. At this stage it 
 
 ## License
 
-GPL-3.0-only. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.74"
 description = "Read battery status from supported 2.4 GHz wireless mouse receivers on Linux"
-license = "GPL-3.0-only"
+license = "MIT"
 repository = "https://github.com/MHDLabs/OneMax-Battery"
 
 [dependencies]

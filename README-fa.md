@@ -59,4 +59,4 @@ sudo ./target/release/one-max-battery /dev/hidrawX
 
 ## مجوز
 
-GPL-3.0-only. متن مجوز در فایل LICENSE قرار دارد.
+MIT. متن مجوز در فایل LICENSE قرار دارد.
