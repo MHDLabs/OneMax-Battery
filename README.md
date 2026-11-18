@@ -11,7 +11,7 @@ A lightweight Rust userspace HID battery monitor for supported 2.4 GHz wireless 
 ## ✨ Features
 
 - 🔎 **Automatic receiver detection** — finds the mouse HID interface by USB identity and its vendor report descriptor; it does not guess between the mouse and keyboard interfaces.
-- 🔋 **Battery status** — reads the reported percentage using the tested vendor HID request (`0xB5 / 0x01`).
+- 🔋 **Battery status** — decodes the observed packed-BCD percentage in byte [7] of the tested vendor HID response (`0xB5 / 0x01`). The previously assumed byte [3] is not used as the percentage.
 - 🖥️ **Waybar integration** — live JSON output, severity classes, and readable tooltips.
 - 🔐 **User-session access** — an optional udev rule grants access to the active desktop user through `uaccess`; no permanent root daemon is needed.
 - 🪶 **Small and focused** — Rust userspace program, no kernel module and no heavy runtime dependencies.
@@ -19,7 +19,7 @@ A lightweight Rust userspace HID battery monitor for supported 2.4 GHz wireless 
 
 ## 📦 Install
 
-Download the Linux x86_64 binary from [GitHub Releases](https://github.com/MHDLabs/OneMax-Battery/releases). The current public `v0.1.0` release contains the first manual-device build; automatic detection and Waybar monitoring are part of the upcoming `v0.2.0` development line until that tag is published.
+Download the latest Linux x86_64 binary from [GitHub Releases](https://github.com/MHDLabs/OneMax-Battery/releases). Releases include automatic receiver detection, continuous monitoring, and Waybar integration.
 
 Install the binary:
 
@@ -104,7 +104,7 @@ TX:     B5 01 00 00 00 00 00 00
 RX:     B5 01 01 38 2E FF 09 70
 ```
 
-The observed battery field was `0x38` (56 decimal). The status byte is shown as raw protocol data; its meaning is not yet documented and is not labelled as charging/full.
+The observed OM-W45B response is `B5 01 01 38 2E FF 09 70`. In hardware comparisons, byte [3] stayed at `0x38` while the final byte changed with the battery: `0x00` with the battery removed, `0x30` with a weak/old battery, and `0x70` with a nearly new battery. The application now decodes byte [7] as packed BCD (so `0x70` → 70%). Bytes [4..6] are not interpreted. This mapping is based on these observed states and still needs testing at additional charge levels; `0x00` cannot distinguish a removed battery from a fully depleted one.
 
 Automatic detection checks both the USB HID identity and the vendor-defined report descriptor, which distinguishes the mouse interface from the receiver's keyboard interface.
 
@@ -124,7 +124,7 @@ GitHub Actions runs formatting, tests, Clippy, and a Linux x86_64 release build.
 ## ⚠️ Scope
 
 - Only ONE MAX OM-W45B with USB ID `1EA7:0066` has been hardware-tested so far.
-- Battery percentage is based on the device's reported byte; additional tests at multiple charge levels are welcome.
+- The packed-BCD interpretation of byte [7] is based on three observed OM-W45B battery states (removed, weak, nearly new); additional charge levels, especially a fully charged battery, still need verification. The one-byte format currently accepts 00–99 only.
 - Other receivers may use unrelated vendor protocols and are not assumed to be compatible.
 - This is a userspace HID utility, not a kernel driver.
 

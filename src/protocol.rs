@@ -18,6 +18,27 @@ pub enum ParseResult {
     Battery(BatteryResponse),
 }
 
+/// Decode the packed-BCD battery field observed in byte 7 of the tested
+/// ONE MAX OM-W45B status response.
+///
+/// Observed hardware samples:
+/// - 0x00 with the battery removed
+/// - 0x30 with a weak/old battery
+/// - 0x70 with a nearly new battery
+///
+/// This is an evidence-based interpretation for the tested receiver, not a
+/// documented protocol guarantee. A single packed-BCD byte represents 00..99.
+pub fn decode_bcd_percent(value: u8) -> Option<u8> {
+    let tens = value >> 4;
+    let ones = value & 0x0F;
+
+    if tens > 9 || ones > 9 {
+        return None;
+    }
+
+    Some(tens * 10 + ones)
+}
+
 pub fn parse_response(data: &[u8]) -> ParseResult {
     if data.first() != Some(&REPORT_ID) || data.get(1) != Some(&BATTERY_COMMAND) {
         return ParseResult::Unrelated;
@@ -27,10 +48,12 @@ pub fn parse_response(data: &[u8]) -> ParseResult {
         return ParseResult::Invalid("battery response is shorter than 8 bytes");
     }
 
-    let percent = data[3];
-    if percent > 100 {
-        return ParseResult::Invalid("battery percentage is outside 0..=100");
-    }
+    // Byte 3 was previously misidentified as the percentage: it remained
+    // 0x38 in all user tests regardless of battery state. Byte 7 tracks the
+    // observed battery states and is decoded as packed BCD instead.
+    let Some(percent) = decode_bcd_percent(data[7]) else {
+        return ParseResult::Invalid("battery field is not valid packed BCD (00..99)");
+    };
 
     let mut raw = [0_u8; REPORT_LEN];
     raw.copy_from_slice(&data[..REPORT_LEN]);
@@ -61,17 +84,53 @@ pub fn format_hex(data: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    fn sample_response(battery_field: u8) -> [u8; REPORT_LEN] {
+        [0xB5, 0x01, 0x01, 0x38, 0x2E, 0xFF, 0x09, battery_field]
+    }
+
     #[test]
-    fn parses_observed_battery_response() {
-        let response = [0xB5, 0x01, 0x01, 0x38, 0x2E, 0xFF, 0x09, 0x70];
+    fn decodes_observed_bcd_battery_states() {
+        for (raw_bcd, expected_percent) in [(0x00, 0), (0x30, 30), (0x70, 70)] {
+            assert_eq!(decode_bcd_percent(raw_bcd), Some(expected_percent));
+        }
+    }
+
+    #[test]
+    fn parses_battery_percentage_from_byte_seven_not_byte_three() {
+        let response = sample_response(0x70);
 
         assert_eq!(
             parse_response(&response),
             ParseResult::Battery(BatteryResponse {
                 status: 0x01,
-                percent: 56,
+                percent: 70,
                 raw: response,
             })
+        );
+    }
+
+    #[test]
+    fn parses_zero_and_weak_battery_samples() {
+        let no_battery = sample_response(0x00);
+        let weak_battery = sample_response(0x30);
+
+        assert!(matches!(
+            parse_response(&no_battery),
+            ParseResult::Battery(BatteryResponse { percent: 0, .. })
+        ));
+        assert!(matches!(
+            parse_response(&weak_battery),
+            ParseResult::Battery(BatteryResponse { percent: 30, .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_bcd_nibbles() {
+        assert_eq!(decode_bcd_percent(0xA0), None);
+        assert_eq!(decode_bcd_percent(0x7A), None);
+        assert_eq!(
+            parse_response(&sample_response(0xFA)),
+            ParseResult::Invalid("battery field is not valid packed BCD (00..99)")
         );
     }
 
@@ -93,18 +152,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_out_of_range_battery_values() {
-        let response = [0xB5, 0x01, 0x01, 101, 0, 0, 0, 0];
-
-        assert_eq!(
-            parse_response(&response),
-            ParseResult::Invalid("battery percentage is outside 0..=100")
-        );
-    }
-
-    #[test]
     fn maps_battery_percentage_to_waybar_states() {
-        assert_eq!(battery_class(100), "normal");
+        assert_eq!(battery_class(99), "normal");
         assert_eq!(battery_class(31), "normal");
         assert_eq!(battery_class(30), "warning");
         assert_eq!(battery_class(16), "warning");
